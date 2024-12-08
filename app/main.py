@@ -19,7 +19,7 @@ app = FastAPI(
 # CORS middleware to allow frontend connections
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Update with your Next.js frontend URL
+    allow_origins=["https://propuestas-peru.onrender.com", "http://propuestas-peru.onrender.com"],  # Update with your Next.js frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
