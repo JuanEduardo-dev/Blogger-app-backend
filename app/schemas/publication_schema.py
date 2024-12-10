@@ -32,6 +32,7 @@ class PublicationCreate(PublicationBase):
     page_id: int
 
 class PublicationUpdate(PublicationBase):
+    page_id: int
     pass
 
 class PublicationResponse(PublicationBase):
@@ -44,6 +45,6 @@ class PublicationResponse(PublicationBase):
     page_id: int
     likes_count: int = 0
     dislikes_count: int = 0
-
-class Config:
-    orm_mode = True
+    
+    class Config:
+        orm_mode = True

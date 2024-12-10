@@ -27,25 +27,25 @@ def create_publication(
 @router.put("/{publication_id}/{user_id}", response_model=PublicationResponse)
 def update_publication(
     publication_id: uuid.UUID, 
-    user_id: uuid.UUID,  # Aquí pasamos el user_id en la ruta
+    user_id: uuid.UUID,
     publication: PublicationUpdate, 
     db: Session = Depends(get_db)
 ):
     """Update an existing publication, only if the user is the owner"""
     try:
         db_publication = PublicationService.update_publication(
-            db, publication_id, publication, user_id  # Pasamos el user_id a la función de servicio
+            db, publication_id, publication, user_id
         )
         if not db_publication:
             raise HTTPException(status_code=404, detail="Publication not found")
         return db_publication
     except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))  # Forbidden if not the owner
+        raise HTTPException(status_code=403, detail=str(e))
 
 @router.delete("/{publication_id}/{user_id}")
 def delete_publication(
     publication_id: uuid.UUID, 
-    user_id: uuid.UUID,  # Aquí pasamos el user_id en la ruta
+    user_id: uuid.UUID,  # Post by path
     db: Session = Depends(get_db)
 ):
     """Delete a publication, only if the user is the owner"""
@@ -55,14 +55,14 @@ def delete_publication(
             raise HTTPException(status_code=404, detail="Publication not found")
         return {"detail": "Publication deleted successfully"}
     except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))  # Forbidden if not the owner
+        raise HTTPException(status_code=403, detail=str(e))
     
 @router.get("/all-items", response_model=List[PublicationResponse])
 def get_all_publications(db: Session = Depends(get_db)):
     """Get all publications."""
     db_publications = PublicationService.get_all_publications(db)
     if not db_publications:
-        raise HTTPException(status_code=404, detail="No publications found")
+        raise HTTPException(status_code=200, detail="No publications found")
     return db_publications
 
 @router.get("/user-reactions/{user_id}/likes", response_model=List[PublicationResponse])
@@ -103,7 +103,7 @@ def get_publications_by_user(
 
 @router.get("/by-tags", response_model=List[PublicationResponse])
 def get_publications_by_tags(
-    tag_ids: List[int] = Query(..., min_items=1),  # Ensure at least one tag is provided
+    tag_ids: List[int] = Query(..., min_items=1),
     #skip: int = 0, 
     #limit: int = 10, 
     db: Session = Depends(get_db)
@@ -120,12 +120,12 @@ def get_publication_tags(
     return PublicationService.get_publication_tags(db, publication_id)
 
 @router.get("/{publication_id}", response_model=PublicationResponse)
-def get_publication(
+def get_publication_by_id(
     publication_id: uuid.UUID, 
     db: Session = Depends(get_db)
 ):
-    """Get the full details of a publication by its UUID"""
-    db_publication = PublicationService.get_publication_by_id(db, publication_id)
-    if not db_publication:
+    """Get a publication by its ID"""
+    publication = PublicationService.get_publication_by_id(db, publication_id)
+    if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
-    return db_publication
+    return publication

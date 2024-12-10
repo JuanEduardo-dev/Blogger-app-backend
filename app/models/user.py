@@ -18,5 +18,5 @@ class User(Base):
     resetPasswordExpires = Column(DateTime, nullable=True)
     degreeId = Column(String, ForeignKey("degree.id"), nullable=False)
 
-    publications = relationship("Publication", back_populates="user", lazy="joined")
+    publications = relationship("Publication", back_populates="user", lazy="joined", cascade="all, delete-orphan")
     reactions = relationship("Reaction", back_populates="user", cascade="all, delete-orphan")

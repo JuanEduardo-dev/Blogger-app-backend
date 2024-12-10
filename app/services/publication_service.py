@@ -36,10 +36,10 @@ class PublicationService:
         db.commit()
         db.refresh(db_publication)
 
-        # Add tags if provided
+        # Add tags != ''
         if publication.tags:
             for tag_id in publication.tags:
-                # First, verify the tag exists
+                # Exist?
                 tag = db.query(Tag).filter(Tag.id == tag_id).first()
                 if tag:
                     publication_tag = PublicationTag(
@@ -57,17 +57,20 @@ class PublicationService:
     def update_publication(db: Session, publication_id: uuid.UUID, publication: PublicationUpdate, user_id: uuid.UUID):
         """Update an existing publication, only if the user is the owner"""
         db_publication = db.query(Publication).filter(Publication.id == publication_id).first()
-        
         if not db_publication:
             return None
         
-        # Verificar si el usuario es el propietario
+        # You are?
         if db_publication.user_id != user_id:
             raise ValueError("You are not the owner of this publication")
         
-        # Update basic publication details
+        # Update title and content
         db_publication.title = publication.title
         db_publication.content = publication.content
+
+        # Update page
+        if publication.page_id is not None:
+            db_publication.page_id = publication.page_id
 
         # Remove existing tags
         db.query(PublicationTag).filter(PublicationTag.publication_id == publication_id).delete()
@@ -89,17 +92,16 @@ class PublicationService:
     def delete_publication(db: Session, publication_id: UUID, user_id: uuid.UUID):
         """Delete a publication, only if the user is the owner"""
         try:
-            # First, find the publication
+            # The first pub
             publication = db.query(Publication).filter(Publication.id == publication_id).first()
             
             if not publication:
                 return False
             
-            # Verificar si el usuario es el propietario
+            # You are?
             if publication.user_id != user_id:
                 raise ValueError("You are not the owner of this publication")
             
-            # Delete will cascade to publication_tags due to cascade configuration
             db.delete(publication)
             db.commit()
             return True
@@ -113,15 +115,15 @@ class PublicationService:
     @staticmethod
     def _add_reaction_counts(db: Session, publications):
         """
-        Añade likes_count y dislikes_count a una publicación o lista de publicaciones
+        Add likes_count and dislikes_count to List Pub
         """
-        # Si se pasa una única publicación, convertirla a lista
+        # Convert Lis
         if not isinstance(publications, list):
             publications = [publications]
         
-        # Recorrer cada publicación para contar likes y dislikes
+        # For pub search
         for pub in publications:
-            # Contamos los 'likes' y asignamos el valor a 'likes_count'
+            # like count
             pub.likes_count = db.query(Reaction).filter(
                 and_(
                     Reaction.id_publication == pub.id,
@@ -129,7 +131,7 @@ class PublicationService:
                 )
             ).count()
             
-            # Contamos los 'dislikes' y asignamos el valor a 'dislikes_count'
+            # dislike count
             pub.dislikes_count = db.query(Reaction).filter(
                 and_(
                     Reaction.id_publication == pub.id,
@@ -137,9 +139,8 @@ class PublicationService:
                 )
             ).count()
         
-        # Siempre devolver como lista, incluso si solo hay una publicación
+        # RETURN ALWAYS LIST OBJ
         return publications
-
 
     
     @staticmethod
@@ -161,7 +162,7 @@ class PublicationService:
             db.query(Publication)
             .join(PublicationTag)
             .filter(PublicationTag.tag_id.in_(tag_ids))
-            .distinct()  # Prevent duplicate publications
+            .distinct() #NO DUPLICATION
             .all()
         )
         return PublicationService._add_reaction_counts(db, publications)
@@ -174,9 +175,26 @@ class PublicationService:
         
     @staticmethod
     def get_publication_by_id(db: Session, publication_id: uuid.UUID):
-        """Get the full details of a publication by its UUID"""
-        publications =  db.query(Publication).filter(Publication.id == publication_id).first()
-        return PublicationService._add_reaction_counts(db, publications)
+        """
+        Retrieve a publication by its ID with all related information
+        
+        Args:
+            db (Session): Database session
+            publication_id (UUID): Unique identifier of the publication
+        
+        Returns:
+            Publication: The publication with reaction counts
+        """
+        publication = db.query(Publication).filter(Publication.id == publication_id).first()
+        
+        if not publication:
+            return None
+        
+        # Add reaction counts to the publication
+        publications_with_reactions = PublicationService._add_reaction_counts(db, publication)
+        
+        # Only First
+        return publications_with_reactions[0]
     
     #USER AND ALL PUBLICATIONS WITH REACTIONS
     
@@ -194,8 +212,8 @@ class PublicationService:
         if type:
             query = query.filter(Reaction.type == type)
         
-        # Obtener todas las publicaciones que ha reaccionado el usuario
+        # Get all reactions
         publications = query.all()
         
-        # Añadir los contadores de likes y dislikes
+        # Add counts
         return PublicationService._add_reaction_counts(db, publications)

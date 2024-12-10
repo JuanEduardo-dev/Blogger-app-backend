@@ -46,14 +46,11 @@ class UserService:
 
     
     def update_user(self, user_id: str, user_update: UserUpdate):
-        """
-        Update user information based on user ID
-        """
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Update user fields if provided
+        # Update fields
         if user_update.name:
             user.name = user_update.name
         if user_update.lastName:
@@ -66,10 +63,24 @@ class UserService:
         try:
             self.db.commit()
             self.db.refresh(user)
-            return user
+            
+            # Fetch degre
+            degree_title = self.db.query(Degree.title).filter(Degree.id == user.degreeId).scalar()
+            
+            # RESPONSE PRST
+            return {
+                "id": str(user.id),
+                "name": user.name,
+                "lastName": user.lastName,
+                "mail": user.mail,
+                "bio": user.bio,
+                "degreeId": user.degreeId,
+                "degreeTitle": degree_title or ""
+            }
         except Exception as e:
             self.db.rollback()
             raise HTTPException(status_code=400, detail=str(e))
+
 
     def delete_user(self, user_id: str):
         """
